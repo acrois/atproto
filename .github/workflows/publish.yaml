@@ -4,19 +4,22 @@ on:
   push:
     branches:
       - main
+      - aaron
 
 env:
-  NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+  NPM_TOKEN: ${{ secrets.NPM_TOKEN || secrets.GITHUB_TOKEN }}
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
   build:
     name: Build & Publish
-    if: github.repository == 'bluesky-social/atproto'
+    if: github.repository_owner == 'bluesky-social' || github.repository_owner == 'acrois' || github.repository_owner == 'aaron'
     runs-on: ubuntu-latest
     permissions:
       contents: write
       pull-requests: write
+      packages: write
+      id-token: write
     steps:
       - uses: actions/checkout@v3
       - uses: pnpm/action-setup@v4
@@ -24,6 +27,11 @@ jobs:
         with:
           node-version: 18
           cache: 'pnpm'
+          # 1. Use the NPM_REGISTRY var if it is defined
+          # 2. if the GH token is the same as the NPM token then use gh packages
+          # 3. otherwise default
+          registry-url: ${{ vars.NPM_REGISTRY || (env.GITHUB_TOKEN == env.NPM_TOKEN && 'https://npm.pkg.github.com/') || '' }}
+          scope: ${{ github.repository_owner }}
       - run: pnpm i --frozen-lockfile
       - run: pnpm build
       - run: pnpm verify

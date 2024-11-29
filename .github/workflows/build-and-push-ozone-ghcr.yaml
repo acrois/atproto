@@ -4,16 +4,15 @@ on:
     branches:
       - main
 env:
-  REGISTRY: ghcr.io
-  USERNAME: ${{ github.actor }}
-  PASSWORD: ${{ secrets.GITHUB_TOKEN }}
-
+  # use REGISTRY var if specified, otherwise use github packages
+  REGISTRY: ${{ vars.REGISTRY || 'ghcr.io' }}
   # github.repository as <account>/<repo>
   IMAGE_NAME: ${{ github.repository }}
-
+  USERNAME: ${{ github.actor }}
+  PASSWORD: ${{ secrets.GITHUB_TOKEN }}
 jobs:
   ozone-container-ghcr:
-    if: github.repository == 'bluesky-social/atproto'
+    if: github.repository_owner == 'bluesky-social' || github.repository_owner == 'acrois' || github.repository_owner == 'aaron'
     runs-on: ubuntu-latest
     permissions:
       contents: read
