@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - main
+      - aaron
 env:
   # use REGISTRY var if specified, otherwise use github packages
   REGISTRY: ${{ vars.REGISTRY || 'ghcr.io' }}
