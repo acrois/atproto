@@ -9,6 +9,7 @@ on:
 env:
   NPM_TOKEN: ${{ secrets.NPM_TOKEN || secrets.GITHUB_TOKEN }}
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  NPM_REGISTRY: ${{ vars.NPM_REGISTRY || '' }}
 
 jobs:
   build:
@@ -21,6 +22,9 @@ jobs:
       packages: write
       id-token: write
     steps:
+      - id: 'registry'
+        if: ${{ env.NPM_REGISTRY == '' && github.server_url != 'https://github.com'}}
+        run: echo "registry=${{ github.server_url }}/api/packages/${{ github.repository_owner }}/npm/" >> $GITHUB_OUTPUT
       - uses: actions/checkout@v3
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v3
@@ -28,9 +32,10 @@ jobs:
           node-version: 18
           cache: 'pnpm'
           # 1. Use the NPM_REGISTRY var if it is defined
-          # 2. if the GH token is the same as the NPM token then use gh packages
-          # 3. otherwise default
-          registry-url: ${{ vars.NPM_REGISTRY || (env.GITHUB_TOKEN == env.NPM_TOKEN && 'https://npm.pkg.github.com/') || '' }}
+          # 2. Detect the registry URL if the host is not GitHub.
+          # 3. If the GitHub token is the same as the NPM token then use GitHub packages
+          # 4. Otherwise default ('')
+          registry-url: ${{ env.NPM_REGISTRY || (steps.registry.outcome == 'success' && steps.registry.outputs.registry) || (env.GITHUB_TOKEN == env.NPM_TOKEN && 'https://npm.pkg.github.com/') || '' }}
           scope: ${{ github.repository_owner }}
       - run: pnpm i --frozen-lockfile
       - run: pnpm build
